@@ -59,6 +59,9 @@ Email: g4vv4kh@gmail.com
 
 ## Find this mod elsewhere
 
+- [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3843236809)
+- [Paradox Mods](https://mods.paradoxplaza.com/mods/168452/Any)
+- [Nexus Mods](https://www.nexusmods.com/crusaderkings3/mods/454)
 - [GitHub](https://github.com/G4VV4KH/-CK3-Traitor-Trials)
 
 ## My other mods
