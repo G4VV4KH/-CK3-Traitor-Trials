@@ -1,0 +1,157 @@
+﻿# Only a living human landed ruler can open this demo's hearings.
+ttr_judge_available_trigger = {
+	is_alive = yes
+	is_ai = no
+	is_landed = yes
+	is_imprisoned = no
+}
+
+# Accused scope. The opinion belongs to the judge, directed at the accused.
+ttr_has_rebellion_charge_trigger = {
+	$JUDGE$ = {
+		OR = {
+			has_opinion_modifier = { modifier = vassal_lost_faction_revolt_war target = prev }
+			has_opinion_modifier = { modifier = vassal_wp_faction_revolt_war target = prev }
+			has_opinion_modifier = { modifier = peasant_revolt_opinion target = prev }
+			# Native refusal/joiner producers store these on the liege,
+			# directed at the rebelling subject. They do not all allow execution.
+			has_opinion_modifier = { modifier = rebellious_vassal_opinion target = prev }
+			has_opinion_modifier = { modifier = treasonous_revoke_refusal target = prev }
+			has_opinion_modifier = { modifier = treasonous_retract_refusal target = prev }
+			has_opinion_modifier = { modifier = treasonous_imprison_refusal target = prev }
+		}
+	}
+}
+
+ttr_has_oathbreaker_charge_trigger = {
+	ttr_has_miv_political_reason_trigger = { JUDGE = $JUDGE$ }
+}
+
+# This does not assume which sentences an opinion permits. Other mods may
+# change its flags, and criminal reasons can already have been consumed.
+ttr_has_current_criminal_reason_trigger = {
+	$JUDGE$ = {
+		OR = {
+			has_imprisonment_reason = prev
+			has_revoke_title_reason = prev
+			has_banish_reason = prev
+			has_execute_reason = prev
+		}
+	}
+}
+
+ttr_has_political_charge_trigger = {
+	OR = {
+		ttr_has_rebellion_charge_trigger = { JUDGE = $JUDGE$ }
+		ttr_has_oathbreaker_charge_trigger = { JUDGE = $JUDGE$ }
+	}
+}
+
+# Called ONLY while iterating the actual losing side of this resolved war.
+# The recorded list retains subjects whose liege changed during settlement.
+# A foreign ally is not a traitor merely because they fought on that side.
+ttr_defeated_participant_trigger = {
+	is_alive = yes
+	NOT = { this = $JUDGE$ }
+	ttr_has_political_charge_trigger = { JUDGE = $JUDGE$ }
+	OR = {
+		is_imprisoned = no
+		is_imprisoned_by = $JUDGE$
+	}
+	OR = {
+		is_vassal_or_below_of = $JUDGE$
+		is_courtier_of = $JUDGE$
+		$WAR$ = {
+			has_variable = $PRIOR_JUDGE$
+			var:$PRIOR_JUDGE$ ?= $JUDGE$
+			is_target_in_variable_list = { name = $PRIOR_LIST$ target = prev }
+		}
+		AND = {
+			# Native civil-war settlement may turn the defeated leader into
+			# an unlanded prisoner; this also covers peasant revolt leaders.
+			is_imprisoned_by = $JUDGE$
+			this = scope:ttr_defeated_leader
+			ttr_has_rebellion_charge_trigger = { JUDGE = $JUDGE$ }
+			$WAR$ = { using_civil_war_cb_trigger = yes }
+		}
+	}
+}
+
+# No generic prisoner/court/realm scan can create a case. Membership is written
+# only by a real decisive war-result hook after selecting its defeated side.
+ttr_candidate_trigger = {
+	is_alive = yes
+	is_imprisoned_by = $JUDGE$
+	ttr_has_political_charge_trigger = { JUDGE = $JUDGE$ }
+	$JUDGE$ = {
+		is_target_in_variable_list = { name = ttr_defeated_roster target = prev }
+	}
+	# Consumed legal grounds stay consumed; sanctions check their own live right.
+}
+
+ttr_unreviewed_candidate_trigger = {
+	ttr_candidate_trigger = { JUDGE = $JUDGE$ }
+	$JUDGE$ = {
+		NOT = { is_target_in_variable_list = { name = ttr_reviewed target = prev } }
+	}
+}
+
+ttr_can_pardon_trigger = {
+	ttr_candidate_trigger = { JUDGE = $JUDGE$ }
+}
+
+# Native interaction validity owns laws, contracts, strong hooks, truces,
+# temporary protections and modded restrictions. The actual picker additionally
+# validates each selected title again when the player sends the demand.
+ttr_can_revoke_trigger = {
+	save_temporary_scope_as = ttr_revocation_candidate
+	ttr_candidate_trigger = { JUDGE = $JUDGE$ }
+	# Native auto_accept's prisoner_revocation branch guarantees no refusal war.
+	is_imprisoned_by = $JUDGE$
+	is_vassal_of = $JUDGE$
+	any_held_title = {
+		title_revocation_standard_can_pick_title_trigger = yes
+		is_nomad_title = no
+	}
+	$JUDGE$ = {
+		ttr_judge_available_trigger = yes
+		has_revoke_title_reason = scope:ttr_revocation_candidate
+		is_character_interaction_valid = {
+			interaction = revoke_title_interaction
+			recipient = scope:ttr_revocation_candidate
+		}
+	}
+}
+
+ttr_can_execute_trigger = {
+	save_temporary_scope_as = ttr_execution_candidate
+	ttr_candidate_trigger = { JUDGE = $JUDGE$ }
+	is_imprisoned_by = $JUDGE$
+	$JUDGE$ = {
+		has_execute_reason = scope:ttr_execution_candidate
+		# CK3 1.21: an assembly head must also satisfy republican execution law.
+		trigger_if = {
+			limit = { gdp_is_assembly_head_trigger = yes }
+			gdp_republic_execution_allowed_trigger = { TARGET = scope:ttr_execution_candidate }
+		}
+	}
+	NOT = { has_strong_hook = $JUDGE$ }
+	NOT = { has_character_flag = is_being_tortured }
+	NOT = { has_character_flag = is_currently_being_purged }
+	$JUDGE$ = {
+		NOT = {
+			any_character_struggle = {
+				involvement = involved
+				has_struggle_phase_parameter = struggle_cannot_execute_involved_prisoners
+				is_secondary_character_involvement_involved_trigger = { CHAR = scope:ttr_execution_candidate }
+			}
+		}
+	}
+	# Special diarchy interactions include surcharges and political transfers.
+	# Leave those cases to the full vanilla interaction in this small demo.
+	is_diarch = no
+	$JUDGE$ = {
+		is_diarch = no
+		NOT = { exists = diarch }
+	}
+}

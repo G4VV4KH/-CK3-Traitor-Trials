@@ -1,0 +1,13 @@
+﻿# Current scope: accused character. JUDGE holds the directed political opinion.
+# Remove only this judge's oathbreaking charge; preserve unrelated crimes.
+ttr_remove_miv_political_reasons_effect = {
+	if = {
+		limit = { has_global_variable = miv_is_loaded }
+		$JUDGE$ = {
+			remove_opinion = {
+				target = prev
+				modifier = miv_oathbreaker
+			}
+		}
+	}
+}

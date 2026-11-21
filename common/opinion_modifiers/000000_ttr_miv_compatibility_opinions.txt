@@ -1,0 +1,13 @@
+﻿# Optional integration database fallback, identical to MIV 5.7's definition.
+# Keep this definition aligned with the supported MIV version; duplicate database
+# keys must have equivalent semantics. Traitor Trials never grants this opinion.
+# Defining the key keeps standalone vanilla parsing valid without another mod.
+miv_oathbreaker = {
+	opinion = -50
+	years = 10
+	decaying = yes
+	revoke_title_reason = yes
+	imprisonment_reason = yes
+	banish_reason = yes
+	execute_reason = yes
+}

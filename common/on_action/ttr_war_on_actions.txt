@@ -1,0 +1,64 @@
+﻿# Add child actions without replacing native effects. Only a decisive outcome
+# creates a surrender roster; white peace and invalidation never open a court.
+# The native war-result effect runs on this tick; its war is destroyed next tick.
+on_war_started = { on_actions = { ttr_record_war_subjects_on_action } }
+on_join_war_as_secondary = { on_actions = { ttr_record_war_subjects_on_action } }
+on_war_transferred = { on_actions = { ttr_record_war_subjects_on_action } }
+on_war_won_attacker = { on_actions = { ttr_won_attacker_on_action } }
+on_war_won_defender = { on_actions = { ttr_won_defender_on_action } }
+
+ttr_record_war_subjects_on_action = {
+	effect = {
+		scope:war = { ttr_remember_war_subjects_effect = yes }
+	}
+}
+
+ttr_won_attacker_on_action = {
+	effect = {
+		if = {
+			limit = { scope:attacker = { is_ai = no is_alive = yes is_landed = yes } }
+			scope:war = {
+				save_scope_as = ttr_settled_war
+				ttr_remember_war_subjects_effect = yes
+			}
+			scope:attacker = { save_scope_as = ttr_judge }
+			scope:defender = { save_scope_as = ttr_defeated_leader }
+			scope:ttr_settled_war = {
+				every_war_defender = {
+					ttr_submit_defeated_participant_effect = {
+						JUDGE = scope:ttr_judge
+						WAR = scope:ttr_settled_war
+						PRIOR_JUDGE = ttr_prior_attacker
+						PRIOR_LIST = ttr_attacker_subjects
+					}
+				}
+			}
+			scope:ttr_judge = { ttr_offer_trial_effect = yes }
+		}
+	}
+}
+
+ttr_won_defender_on_action = {
+	effect = {
+		if = {
+			limit = { scope:defender = { is_ai = no is_alive = yes is_landed = yes } }
+			scope:war = {
+				save_scope_as = ttr_settled_war
+				ttr_remember_war_subjects_effect = yes
+			}
+			scope:defender = { save_scope_as = ttr_judge }
+			scope:attacker = { save_scope_as = ttr_defeated_leader }
+			scope:ttr_settled_war = {
+				every_war_attacker = {
+					ttr_submit_defeated_participant_effect = {
+						JUDGE = scope:ttr_judge
+						WAR = scope:ttr_settled_war
+						PRIOR_JUDGE = ttr_prior_defender
+						PRIOR_LIST = ttr_defender_subjects
+					}
+				}
+			}
+			scope:ttr_judge = { ttr_offer_trial_effect = yes }
+		}
+	}
+}

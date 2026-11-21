@@ -1,0 +1,12 @@
+﻿# Integrated MIV compatibility. Current scope: accused character.
+# The fallback opinion definition makes this database ID valid without MIV.
+# MIV sets this open-ended global variable on game start; vanilla does not.
+ttr_has_miv_political_reason_trigger = {
+	has_global_variable = miv_is_loaded
+	$JUDGE$ = {
+		has_opinion_modifier = {
+			target = prev
+			modifier = miv_oathbreaker
+		}
+	}
+}

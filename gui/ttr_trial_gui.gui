@@ -1,0 +1,30 @@
+﻿# Hold manual pause throughout invitation, hearings, native picker and summary.
+# Never toggle an already paused game, and never resume time automatically.
+window = {
+	name = ttr_trial_pause_guard
+	size = { 1 1 }
+	alwaystransparent = yes
+	visible = "[GetPlayer.IsValid]"
+	state = {
+		name = ttr_recovery_initialize
+		trigger_on_create = yes
+		duration = 0
+		alpha = 1
+		on_start = "[GetVariableSystem.Clear('ttr_recorded_session_recovered')]"
+	}
+	state = {
+		name = ttr_recover_loaded_queue
+		trigger_when = "[And(GetPlayer.IsValid,Not(GetVariableSystem.Exists('ttr_recorded_session_recovered')))]"
+		duration = 0
+		alpha = 1
+		on_start = "[GetVariableSystem.Set('ttr_recorded_session_recovered','yes')]"
+		on_start = "[GetScriptedGui('ttr_recover_recorded_session').Execute(GuiScope.SetRoot(GetPlayer.MakeScope).End)]"
+	}
+	state = {
+		name = ttr_hold_manual_pause
+		trigger_when = "[And(GetPlayer.IsValid,And(GetPlayer.MakeScope.GetVariable('ttr_pause_session').IsSet,Not(IsManuallyPaused)))]"
+		duration = 0
+		alpha = 1
+		on_start = "[OnPause]"
+	}
+}

@@ -1,0 +1,106 @@
+﻿# Accused scope. A roster member can be seen after more than one war, but
+# cannot enter the pending queue twice or duplicate the currently open case.
+ttr_enqueue_case_effect = {
+	if = {
+		limit = {
+			ttr_unreviewed_candidate_trigger = { JUDGE = $JUDGE$ }
+			$JUDGE$ = {
+				NOT = { is_target_in_variable_list = { name = ttr_cases target = prev } }
+				trigger_if = {
+					limit = { exists = var:ttr_current_accused }
+					var:ttr_current_accused != prev
+				}
+			}
+		}
+		$JUDGE$ = { add_to_variable_list = { name = ttr_cases target = prev } }
+	}
+}
+
+# Accused scope, called only from the resolved war's defeated participant loop.
+# This is capitulation custody, using the same native helper as a defeated
+# faction. It never sends an arrest demand and never adds or restores a charge.
+ttr_submit_defeated_participant_effect = {
+	if = {
+		limit = {
+			ttr_defeated_participant_trigger = {
+				JUDGE = $JUDGE$
+				WAR = $WAR$
+				PRIOR_JUDGE = $PRIOR_JUDGE$
+				PRIOR_LIST = $PRIOR_LIST$
+			}
+		}
+		if = {
+			limit = { is_imprisoned = no }
+			hard_imprison_character_effect = { TARGET = this IMPRISONER = $JUDGE$ }
+		}
+		if = {
+			limit = { is_imprisoned_by = $JUDGE$ }
+			$JUDGE$ = {
+				# Only a fresh defeated participant gets a fresh hearing. Do not
+				# reset dispositions for unrelated people in an ongoing session.
+				remove_list_variable = { name = ttr_reviewed target = prev }
+				if = {
+					limit = { NOT = { is_target_in_variable_list = { name = ttr_defeated_roster target = prev } } }
+					add_to_variable_list = { name = ttr_defeated_roster target = prev }
+				}
+			}
+		}
+	}
+}
+
+# War scope. Remember actual opposing subjects on declaration/entry, before a
+# settlement can change their liege. A changed primary ruler gets a new record;
+# the successor cannot inherit a personal grievance against a foreign ally.
+ttr_remember_war_subjects_effect = {
+	save_scope_as = ttr_recording_war
+	if = {
+		limit = { primary_defender = { is_ai = no is_alive = yes is_landed = yes } }
+		primary_defender = { save_scope_as = ttr_recording_judge }
+		if = {
+			limit = {
+				OR = {
+					NOT = { has_variable = ttr_prior_defender }
+					NOT = { var:ttr_prior_defender ?= scope:ttr_recording_judge }
+				}
+			}
+			clear_variable_list = ttr_defender_subjects
+			set_variable = { name = ttr_prior_defender value = scope:ttr_recording_judge }
+		}
+		every_war_attacker = {
+			limit = {
+				is_alive = yes
+				OR = {
+					is_vassal_or_below_of = scope:ttr_recording_judge
+					is_courtier_of = scope:ttr_recording_judge
+				}
+				scope:ttr_recording_war = { NOT = { is_target_in_variable_list = { name = ttr_defender_subjects target = prev } } }
+			}
+			scope:ttr_recording_war = { add_to_variable_list = { name = ttr_defender_subjects target = prev } }
+		}
+	}
+	if = {
+		limit = { primary_attacker = { is_ai = no is_alive = yes is_landed = yes } }
+		primary_attacker = { save_scope_as = ttr_recording_judge }
+		if = {
+			limit = {
+				OR = {
+					NOT = { has_variable = ttr_prior_attacker }
+					NOT = { var:ttr_prior_attacker ?= scope:ttr_recording_judge }
+				}
+			}
+			clear_variable_list = ttr_attacker_subjects
+			set_variable = { name = ttr_prior_attacker value = scope:ttr_recording_judge }
+		}
+		every_war_defender = {
+			limit = {
+				is_alive = yes
+				OR = {
+					is_vassal_or_below_of = scope:ttr_recording_judge
+					is_courtier_of = scope:ttr_recording_judge
+				}
+				scope:ttr_recording_war = { NOT = { is_target_in_variable_list = { name = ttr_attacker_subjects target = prev } } }
+			}
+			scope:ttr_recording_war = { add_to_variable_list = { name = ttr_attacker_subjects target = prev } }
+		}
+	}
+}

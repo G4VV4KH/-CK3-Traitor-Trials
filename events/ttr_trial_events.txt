@@ -1,0 +1,258 @@
+﻿namespace = ttr
+
+# Offered when the war settlement has produced reviewable cases.
+ttr.0001 = {
+	type = character_event
+	title = ttr.0001.t
+	desc = ttr.0001.desc
+	theme = realm
+	left_portrait = { character = root }
+	immediate = { set_variable = { name = ttr_pause_session value = yes } }
+
+	option = {
+		name = ttr.0001.begin
+		ttr_start_or_resume_effect = yes
+	}
+	option = {
+		name = ttr.0001.skip
+		custom_tooltip = ttr_finish_tt
+		ttr_finish_session_effect = yes
+	}
+}
+
+# Older saves may still have a next-day offer scheduled by demo 1.
+ttr.0002 = {
+	orphan = yes
+	hidden = yes
+	immediate = { }
+}
+
+ttr.0010 = {
+	type = character_event
+	title = ttr_hearing_title
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					exists = var:ttr_current_accused
+					var:ttr_current_accused = { ttr_candidate_trigger = { JUDGE = root } }
+				}
+				desc = {
+					desc = ttr_hearing_intro
+					triggered_desc = {
+						trigger = { var:ttr_current_accused = { ttr_has_rebellion_charge_trigger = { JUDGE = root } } }
+						desc = ttr_charge_rebellion
+					}
+					triggered_desc = {
+						trigger = { var:ttr_current_accused = { ttr_has_oathbreaker_charge_trigger = { JUDGE = root } } }
+						desc = ttr_charge_oathbreaker
+					}
+					desc = ttr_hearing_outro
+				}
+			}
+			desc = ttr_hearing_invalid
+		}
+	}
+	theme = realm
+	left_portrait = { character = root }
+	right_portrait = {
+		character = scope:ttr_accused
+		animation = fear
+	}
+
+	immediate = {
+		if = {
+			limit = { exists = var:ttr_current_accused }
+			var:ttr_current_accused = { save_scope_as = ttr_accused }
+		}
+	}
+
+	option = {
+		name = ttr_hearing_keep
+		trigger = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = {
+				ttr_candidate_trigger = { JUDGE = root }
+				is_imprisoned_by = root
+			}
+		}
+		custom_tooltip = ttr_keep_tt
+		ttr_keep_effect = yes
+	}
+	option = {
+		name = ttr_hearing_pardon
+		trigger = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = { ttr_can_pardon_trigger = { JUDGE = root } }
+		}
+		custom_tooltip = ttr_pardon_tt
+		ttr_pardon_effect = yes
+	}
+	option = {
+		name = ttr_hearing_revoke
+		trigger = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = { ttr_can_revoke_trigger = { JUDGE = root } }
+		}
+		custom_tooltip = ttr_revoke_tt
+		ttr_revoke_effect = yes
+	}
+	option = {
+		name = ttr_hearing_execute
+		trigger = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = { ttr_can_execute_trigger = { JUDGE = root } }
+		}
+		custom_tooltip = ttr_execute_tt
+		ttr_execute_effect = yes
+	}
+	option = {
+		name = ttr_hearing_next
+		trigger = {
+			NOT = {
+				exists = var:ttr_current_accused
+				var:ttr_current_accused = { ttr_candidate_trigger = { JUDGE = root } }
+			}
+		}
+		custom_tooltip = ttr_invalid_tt
+		ttr_next_case_effect = yes
+	}
+	option = {
+		name = ttr_hearing_finish
+		custom_tooltip = ttr_finish_tt
+		ttr_finish_session_effect = yes
+	}
+}
+
+ttr.0011 = {
+	type = court_event
+	title = ttr_hearing_title
+	desc = {
+		first_valid = {
+			triggered_desc = {
+				trigger = {
+					exists = var:ttr_current_accused
+					var:ttr_current_accused = { ttr_candidate_trigger = { JUDGE = root } }
+				}
+				desc = {
+					desc = ttr_hearing_intro
+					triggered_desc = {
+						trigger = { var:ttr_current_accused = { ttr_has_rebellion_charge_trigger = { JUDGE = root } } }
+						desc = ttr_charge_rebellion
+					}
+					triggered_desc = {
+						trigger = { var:ttr_current_accused = { ttr_has_oathbreaker_charge_trigger = { JUDGE = root } } }
+						desc = ttr_charge_oathbreaker
+					}
+					desc = ttr_hearing_outro
+				}
+			}
+			desc = ttr_hearing_invalid
+		}
+	}
+	theme = realm
+	court_scene = {
+		button_position_character = scope:ttr_accused
+		court_event_force_open = yes
+		show_timeout_info = no
+		should_pause_time = yes
+		roles = {
+			scope:ttr_accused = {
+				group = petitioners_group
+				animation = beg
+			}
+		}
+	}
+
+	immediate = {
+		if = {
+			limit = { exists = var:ttr_current_accused }
+			var:ttr_current_accused = { save_scope_as = ttr_accused }
+		}
+	}
+
+	option = {
+		name = ttr_hearing_keep
+		trigger = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = {
+				ttr_candidate_trigger = { JUDGE = root }
+				is_imprisoned_by = root
+			}
+		}
+		custom_tooltip = ttr_keep_tt
+		ttr_keep_effect = yes
+	}
+	option = {
+		name = ttr_hearing_pardon
+		trigger = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = { ttr_can_pardon_trigger = { JUDGE = root } }
+		}
+		custom_tooltip = ttr_pardon_tt
+		ttr_pardon_effect = yes
+	}
+	option = {
+		name = ttr_hearing_revoke
+		trigger = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = { ttr_can_revoke_trigger = { JUDGE = root } }
+		}
+		custom_tooltip = ttr_revoke_tt
+		ttr_revoke_effect = yes
+	}
+	option = {
+		name = ttr_hearing_execute
+		trigger = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = { ttr_can_execute_trigger = { JUDGE = root } }
+		}
+		custom_tooltip = ttr_execute_tt
+		ttr_execute_effect = yes
+	}
+	option = {
+		name = ttr_hearing_next
+		trigger = {
+			NOT = {
+				exists = var:ttr_current_accused
+				var:ttr_current_accused = { ttr_candidate_trigger = { JUDGE = root } }
+			}
+		}
+		custom_tooltip = ttr_invalid_tt
+		ttr_next_case_effect = yes
+	}
+	option = {
+		name = ttr_hearing_finish
+		custom_tooltip = ttr_finish_tt
+		ttr_finish_session_effect = yes
+	}
+}
+
+# Legacy saves may still contain yesterday's scheduled dispatcher. It must
+# never reopen a picker or consume a new request after loading this version.
+ttr.0020 = {
+	orphan = yes
+	hidden = yes
+	immediate = { }
+}
+
+ttr.0090 = {
+	type = character_event
+	title = ttr.0090.t
+	desc = ttr.0090.desc
+	theme = realm
+	left_portrait = { character = root }
+	option = {
+		name = ttr.0090.close
+		hidden_effect = {
+			if = {
+				limit = {
+					NOT = { has_variable = ttr_active }
+					NOT = { has_variable = ttr_invitation_pending }
+					NOT = { has_variable = ttr_revoke_waiting }
+				}
+				remove_variable = ttr_pause_session
+			}
+		}
+	}
+}

@@ -1,0 +1,1 @@
+﻿gui/ttr_trial_gui.gui = ttr_trial_pause_guard

@@ -1,0 +1,342 @@
+﻿# Public effects run in the judge's character scope. Persistent lists contain
+# characters copied from the losing side while its war scope still exists.
+# Hearings are the surrender settlement, never a scan of unrelated old prisoners.
+
+ttr_open_hearing_effect = {
+	hidden_effect = {
+		set_variable = { name = ttr_pause_session value = yes }
+		# Option tooltips evaluate the request effect without applying its
+		# assignments. Create the counter before any hearing can preview it.
+		if = {
+			limit = { NOT = { has_variable = ttr_revoke_request_serial } }
+			set_variable = { name = ttr_revoke_request_serial value = 0 }
+		}
+		if = {
+			limit = {
+				is_ai = no
+				has_dlc_feature = royal_court
+				has_royal_court = yes
+			}
+			open_view_data = { view = royal_court player = root }
+			trigger_event = ttr.0011
+		}
+		else = { trigger_event = ttr.0010 }
+	}
+}
+
+ttr_collect_cases_effect = {
+	hidden_effect = {
+		save_scope_as = ttr_judge
+		# Prune queue entries independently of whether a hearing is already open.
+		every_in_list = {
+			variable = ttr_cases
+			limit = { NOT = { ttr_unreviewed_candidate_trigger = { JUDGE = scope:ttr_judge } } }
+			add_to_list = ttr_stale_cases
+		}
+		every_in_list = {
+			list = ttr_stale_cases
+			scope:ttr_judge = { remove_list_variable = { name = ttr_cases target = prev } }
+		}
+		# Only a decisive war-result hook may populate this roster. Old prisoners,
+		# loyalists and white-peace participants never enter through a realm scan.
+		every_in_list = {
+			variable = ttr_defeated_roster
+			ttr_enqueue_case_effect = { JUDGE = scope:ttr_judge }
+		}
+	}
+}
+
+ttr_offer_trial_effect = {
+	hidden_effect = {
+		# Another war can finish while this session's invitation or picker is open.
+		# Merge its eligible defeated participants without resetting the session.
+		ttr_collect_cases_effect = yes
+		if = {
+			limit = {
+				ttr_judge_available_trigger = yes
+				NOT = { has_variable = ttr_active }
+				NOT = { has_variable = ttr_invitation_pending }
+				NOT = { has_variable = ttr_revoke_waiting }
+				any_in_list = { variable = ttr_cases always = yes }
+			}
+			set_variable = { name = ttr_invitation_pending value = yes }
+			trigger_event = ttr.0001
+		}
+	}
+}
+
+ttr_start_or_resume_effect = {
+	hidden_effect = {
+		remove_variable = ttr_revoke_pending_accused
+		remove_variable = ttr_revoke_waiting
+		remove_variable = ttr_revoke_seen_serial
+		remove_variable = ttr_invitation_pending
+		remove_variable = ttr_deferred
+		if = {
+			limit = { ttr_judge_available_trigger = yes }
+			set_variable = { name = ttr_active value = yes }
+			save_scope_as = ttr_judge
+			if = {
+				limit = {
+					exists = var:ttr_current_accused
+					var:ttr_current_accused = { ttr_candidate_trigger = { JUDGE = scope:ttr_judge } }
+				}
+				ttr_open_hearing_effect = yes
+			}
+			else = { ttr_next_case_effect = yes }
+		}
+		else = { ttr_finish_session_effect = yes }
+	}
+}
+
+ttr_next_case_effect = {
+	hidden_effect = {
+		remove_variable = ttr_revoke_pending_accused
+		remove_variable = ttr_revoke_waiting
+		remove_variable = ttr_revoke_seen_serial
+		remove_variable = ttr_current_accused
+		save_scope_as = ttr_judge
+		if = {
+			limit = { ttr_judge_available_trigger = yes }
+			# A dying, released, transferred or newly pardoned prisoner is skipped.
+			# Current accused was removed from the list when selected, so one
+			# option advances exactly once and never reopens the previous case.
+			random_in_list = {
+				variable = ttr_cases
+				limit = { ttr_unreviewed_candidate_trigger = { JUDGE = scope:ttr_judge } }
+				scope:ttr_judge = {
+					set_variable = { name = ttr_current_accused value = prev }
+				}
+			}
+			if = {
+				limit = { exists = var:ttr_current_accused }
+				remove_list_variable = { name = ttr_cases target = var:ttr_current_accused }
+				set_variable = { name = ttr_active value = yes }
+				ttr_open_hearing_effect = yes
+			}
+			else = {
+				ttr_clear_session_effect = yes
+				trigger_event = ttr.0090
+			}
+		}
+		else = { ttr_finish_session_effect = yes }
+	}
+}
+
+ttr_keep_effect = {
+	hidden_effect = {
+		save_scope_as = ttr_judge
+		if = {
+			limit = {
+				exists = var:ttr_current_accused
+				var:ttr_current_accused = { ttr_candidate_trigger = { JUDGE = scope:ttr_judge } }
+			}
+			add_to_variable_list = { name = ttr_reviewed target = var:ttr_current_accused }
+		}
+		ttr_next_case_effect = yes
+	}
+}
+
+ttr_pardon_effect = {
+	save_scope_as = ttr_judge
+	if = {
+		limit = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = { ttr_can_pardon_trigger = { JUDGE = scope:ttr_judge } }
+		}
+		var:ttr_current_accused = { save_scope_as = ttr_accused }
+		# Remove only the named political claims, not all criminal reasons.
+		remove_opinion = { modifier = vassal_lost_faction_revolt_war target = scope:ttr_accused }
+		remove_opinion = { modifier = vassal_wp_faction_revolt_war target = scope:ttr_accused }
+		remove_opinion = { modifier = peasant_revolt_opinion target = scope:ttr_accused }
+		remove_opinion = { modifier = rebellious_vassal_opinion target = scope:ttr_accused }
+		remove_opinion = { modifier = treasonous_revoke_refusal target = scope:ttr_accused }
+		remove_opinion = { modifier = treasonous_retract_refusal target = scope:ttr_accused }
+		remove_opinion = { modifier = treasonous_imprison_refusal target = scope:ttr_accused }
+		scope:ttr_accused = {
+			ttr_remove_miv_political_reasons_effect = { JUDGE = scope:ttr_judge }
+			if = {
+				limit = {
+					is_imprisoned_by = scope:ttr_judge
+					NOT = { ttr_has_current_criminal_reason_trigger = { JUDGE = scope:ttr_judge } }
+				}
+				release_from_prison = yes
+			}
+		}
+	}
+	ttr_next_case_effect = yes
+}
+
+ttr_execute_effect = {
+	save_scope_as = ttr_judge
+	if = {
+		limit = {
+			exists = var:ttr_current_accused
+			var:ttr_current_accused = { ttr_can_execute_trigger = { JUDGE = scope:ttr_judge } }
+		}
+		var:ttr_current_accused = {
+			save_scope_as = ttr_accused
+			save_scope_as = recipient
+		}
+		save_scope_as = actor
+		save_scope_as = puppet_or_actor
+		# Normal execution only. Explicit false values retain vanilla stress
+		# handling that checks the existence of the sacrifice selection scope.
+		save_scope_value_as = { name = execution_sacrifice value = no }
+		save_scope_value_as = { name = execution_devour value = no }
+		save_scope_value_as = { name = execution_beheaded value = no }
+		save_scope_value_as = { name = execution_kennel value = no }
+		save_scope_value_as = { name = execution_public value = no }
+		save_scope_value_as = { name = execution_provisions value = no }
+		execute_prisoner_effect = {
+			VICTIM = scope:ttr_accused
+			EXECUTIONER = scope:ttr_judge
+		}
+		# CK3 1.21 keeps these consequences in the native interaction,
+		# outside execute_prisoner_effect. Consume only this target's approval.
+		gdp_consume_execution_approval_effect = { TARGET = scope:ttr_accused }
+		if = {
+			limit = {
+				house ?= { has_house_aspiration_parameter = ambition_execute_and_banish_provide_bonuses }
+			}
+			gdp_ambition_execute_and_banish_bonus_effect = yes
+		}
+	}
+	ttr_next_case_effect = yes
+}
+
+# Open the native picker immediately. Its own window lifecycle resumes the
+# queue after Send, Cancel or Escape; no game-date advance is involved.
+ttr_revoke_effect = {
+	hidden_effect = {
+		save_scope_as = ttr_judge
+		save_scope_as = ttr_picker_actor
+		if = {
+			limit = {
+				ttr_judge_available_trigger = yes
+				exists = var:ttr_current_accused
+				var:ttr_current_accused = { ttr_can_revoke_trigger = { JUDGE = scope:ttr_judge } }
+			}
+			var:ttr_current_accused = {
+				save_scope_as = ttr_revoke_accused
+				save_scope_as = ttr_picker_recipient
+			}
+			set_variable = { name = ttr_revoke_pending_accused value = scope:ttr_revoke_accused }
+			if = {
+				limit = { has_variable = ttr_revoke_request_serial }
+				change_variable = { name = ttr_revoke_request_serial add = 1 }
+			}
+			else = { set_variable = { name = ttr_revoke_request_serial value = 1 } }
+			remove_variable = ttr_revoke_seen_serial
+			remove_variable = ttr_active
+			remove_variable = ttr_invitation_pending
+			set_variable = { name = ttr_deferred value = yes }
+			set_variable = { name = ttr_revoke_waiting value = yes }
+			set_variable = { name = ttr_pause_session value = yes }
+			open_interaction_window = {
+				interaction = revoke_title_interaction
+				actor = root
+				recipient = scope:ttr_revoke_accused
+			}
+		}
+		else = { ttr_next_case_effect = yes }
+	}
+}
+
+# The native picker _show hook supplies the actual native actor and recipient.
+ttr_revoke_picker_opened_effect = {
+	hidden_effect = {
+		if = {
+			limit = {
+				has_variable = ttr_revoke_waiting
+				exists = var:ttr_revoke_pending_accused
+				exists = var:ttr_current_accused
+				has_variable = ttr_revoke_request_serial
+				exists = scope:ttr_picker_actor
+				exists = scope:ttr_picker_recipient
+				scope:ttr_picker_actor = root
+				scope:ttr_picker_recipient = var:ttr_revoke_pending_accused
+				var:ttr_current_accused = var:ttr_revoke_pending_accused
+			}
+			set_variable = { name = ttr_revoke_seen_serial value = var:ttr_revoke_request_serial }
+		}
+	}
+}
+
+# _hide is common to the native Send, close button and Escape paths. Consuming
+# the matching marker before advancing makes repeated hide notifications inert.
+ttr_revoke_picker_closed_effect = {
+	hidden_effect = {
+		if = {
+			limit = {
+				has_variable = ttr_revoke_waiting
+				has_variable = ttr_deferred
+				exists = var:ttr_revoke_pending_accused
+				exists = var:ttr_current_accused
+				var:ttr_current_accused = var:ttr_revoke_pending_accused
+				has_variable = ttr_revoke_seen_serial
+				has_variable = ttr_revoke_request_serial
+				var:ttr_revoke_seen_serial = var:ttr_revoke_request_serial
+			}
+			remove_variable = ttr_revoke_waiting
+			remove_variable = ttr_revoke_seen_serial
+			remove_variable = ttr_deferred
+			add_to_variable_list = { name = ttr_reviewed target = var:ttr_current_accused }
+			ttr_next_case_effect = yes
+		}
+	}
+}
+
+# Clear only session bookkeeping. Neither skipping nor finishing adds a sentence.
+ttr_clear_session_effect = {
+	hidden_effect = {
+		remove_variable = ttr_revoke_pending_accused
+		remove_variable = ttr_revoke_waiting
+		remove_variable = ttr_revoke_seen_serial
+		remove_variable = ttr_current_accused
+		remove_variable = ttr_active
+		remove_variable = ttr_invitation_pending
+		remove_variable = ttr_deferred
+		clear_variable_list = ttr_cases
+		clear_variable_list = ttr_reviewed
+		clear_variable_list = ttr_defeated_roster
+	}
+}
+
+ttr_finish_session_effect = {
+	hidden_effect = {
+		ttr_clear_session_effect = yes
+		remove_variable = ttr_pause_session
+	}
+}
+
+# GUI windows are not persistent. Once on entering a loaded campaign, recover
+# only a persisted defeated-war roster. Legacy generic queues prove no war
+# membership and are discarded without a hearing, arrest or extra sentence.
+ttr_recover_recorded_session_effect = {
+	hidden_effect = {
+		if = {
+			limit = {
+				NOT = { has_variable = ttr_active }
+				NOT = { has_variable = ttr_invitation_pending }
+				OR = {
+					has_variable = ttr_deferred
+					has_variable = ttr_revoke_waiting
+				}
+			}
+			save_scope_as = ttr_judge
+			if = {
+				limit = {
+					ttr_judge_available_trigger = yes
+					has_variable_list = ttr_defeated_roster
+					any_in_list = {
+						variable = ttr_defeated_roster
+						ttr_unreviewed_candidate_trigger = { JUDGE = scope:ttr_judge }
+					}
+				}
+				ttr_start_or_resume_effect = yes
+			}
+			else = { ttr_finish_session_effect = yes }
+		}
+	}
+}

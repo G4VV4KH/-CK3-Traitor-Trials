@@ -1,0 +1,17 @@
+﻿ttr_revoke_picker_opened = {
+	scope = character
+	is_shown = { always = yes }
+	effect = { ttr_revoke_picker_opened_effect = yes }
+}
+
+ttr_revoke_picker_closed = {
+	scope = character
+	is_shown = { always = yes }
+	effect = { ttr_revoke_picker_closed_effect = yes }
+}
+
+ttr_recover_recorded_session = {
+	scope = character
+	is_shown = { always = yes }
+	effect = { ttr_recover_recorded_session_effect = yes }
+}
