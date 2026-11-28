@@ -79,6 +79,7 @@ Email: g4vv4kh@gmail.com
 - [Strategist Assistant](https://steamcommunity.com/sharedfiles/filedetails/?id=3827659479) — plan armies, recruitment and wars.
 - [Title Domination](https://steamcommunity.com/sharedfiles/filedetails/?id=3828276945) — proclaim uncreated titles through diplomacy and war.
 - [Accolade Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3836819350) — choose accolade attributes or knights first and set rank limits.
+- [Siege Reworked](https://steamcommunity.com/sharedfiles/filedetails/?id=3847315392) — storm forts, lead sorties and negotiate surrender.
 
 ### Compatibility patches
 
